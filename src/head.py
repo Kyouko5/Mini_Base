@@ -1,7 +1,7 @@
 '''
 Author: Kyouko
 Date: 2025-02-27 14:56:22
-LastEditTime: 2025-02-27 15:37:03
+LastEditTime: 2025-02-27 15:39:11
 Description: 1. 保存表的元数据信息
              2. 所有数据库操作都通过 Schema 类进行
              3. Schema 类负责管理唯一的 Header 实例
@@ -20,4 +20,5 @@ class Header(object):
     #                其中 fieldList 是字段列表，每个字段是一个元组 (fieldname, fieldtype, fieldlength)
     #  inLen     : 表的数量
     #  off       : 在文件中 body 空间的开始位置
-
+    def __init__(self,nameList,fieldDict,inistored, inLen, off):
+        print ('__init__ of Header')
