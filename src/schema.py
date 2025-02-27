@@ -1,7 +1,7 @@
 '''
 Author: Kyouko
 Date: 2025-02-27 10:47:36
-LastEditTime: 2025-02-27 15:06:47
+LastEditTime: 2025-02-27 15:31:33
 Description: to process the schema data, which is stored in all.sch
              all.sch are divied into three parts,namely metaHead, tableNameHead and body
 FilePath: /Database/Mini_Base/src/schema.py
@@ -86,6 +86,7 @@ class Schema():
                 # 解析metaHead
                 self.is_stored,self.table_num,self.body_offset = struct.unpack('!?ii', meta_buf, 0)
                 if self.is_stored:
+                    print ("there is something  in the all.sch")
                     self._load_tables()
             else:
                 self.init_meta_()
@@ -112,13 +113,64 @@ class Schema():
 
         # 初始化Header
         nameList = []
-        fieldList = {}
-        self.head = head.Header(nameList, fieldList, False, 0, self.body_offset)
+        fieldDict = {}
+        self.head = head.Header(nameList, fieldDict, False, 0, self.body_offset)
 
         print ('metaHead of schema has been written to all.sch and the Header ojbect created')
 
     def _load_tables(self):
         """从文件中加载信息到Header"""
+        # 1. 读取metaHead信息（12B）
+        print ("tableNum in schema file is ", self.table_num)
+        print ("isStored in schema file is ", self.is_stored)
+        print ("offset of body in schema  file is ", self.body_offset)
+
+        self.body_begin = self.body_offset
+        nameList = []
+        fieldsDict = {}
+
+        self.file.seek(0)
+        buf = self.file.read(META_HEAD_SIZE + TABLE_NAME_HEAD_SIZE + MAX_FIELD_SECTION_SIZE)
+        # 2. 读取每个表的信息
+        for i in range(self.table_num):
+            # 2.1 读取表名信息
+            tempName = struct.unpack('!10s', buf, 
+                                     META_HEAD_SIZE + i * TABLE_NAME_ENTRY_LEN)
+            print ("tablename is ", tempName)
+
+            # 2.2 读取字段数量
+            tempNum, = struct.unpack_from('!i', buf, 
+                                          META_HEAD_SIZE + i * TABLE_NAME_ENTRY_LEN + 10)
+            print ('number of fields of table ', tempName, ' is ', tempNum)
+
+            # 2.3 读取该表在body中的偏移量
+            tempPos, = struct.unpack_from('!i', buf,
+                                          META_HEAD_SIZE + i * TABLE_NAME_ENTRY_LEN + 10 + struct.calcsize('i'))
+            print ("tempPos in body is ", tempPos)
+
+            tempnameitem = (tempName, tempNum, tempPos)
+            nameList.append(tempnameitem)
+
+            # fieldDict = (tablename, fieldList)
+            # fieldList = (fieldname,fieldtype,fieldlength)
+            # 获取该表的字段信息
+            if tempNum > 0:
+                fieldsList = []
+                for j in range(tempNum):
+                    # 获取该表的字段信息（字段名，字段类型，字段长度）
+                    tempFieldName,tempFieldType,tempFieldLength = struct.unpack_from('!10sii',
+                                                                                             buf, tempPos + j * MAX_FIELD_LEN)
+                    print ("field name is ", tempFieldName)
+                    print ("field type is ", tempFieldType)
+                    print ("field length is ", tempFieldLength)
+
+                    tempfielditem = (tempFieldName, tempFieldType, tempFieldLength)
+                    fieldsList.append(tempfielditem)
+                fieldsDict[tempName] = fieldsList
+            
+            self.head = head.Header(nameList,fieldsList, True, self.table_num, self.body_offset)
+
+
 
 
     def appendTable(self,tableName,fieldList):
