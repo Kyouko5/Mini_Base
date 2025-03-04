@@ -1,7 +1,7 @@
 '''
 Author: Kyouko
 Date: 2025-02-27 10:47:36
-LastEditTime: 2025-03-04 09:01:43
+LastEditTime: 2025-03-04 10:25:16
 Description: to process the schema data, which is stored in all.sch
              all.sch are divied into three parts,namely metaHead, tableNameHead and body
 FilePath: /Database/Mini_Base/src/schema.py
@@ -21,7 +21,7 @@ import head
 struct metaHead {
     bool isStored;    // 是否有数据
     int tableNum;     // 表的数量
-    int offset;       // body部分的起始位置
+    int offset;       // body部分的末尾(最后一个表的末尾)
 };
 
 struct tableNameEntry {
@@ -171,14 +171,85 @@ class Schema():
             self.head = head.Header(nameList,fieldsList, True, self.table_num, self.body_offset)
 
 
+    def __del__(self):
+        # 将metahead中的信息写回文件中
+        # 由于在运行的时候是使用的self.head，所以在析构的时候需要将self.head中的信息写回文件
+        print ("__del__ of class Schema")
+        self.file.seek(0)
+        meta_buf = struct.pack('!?ii', self.head.isStored, self.head.numsOfTable, self.head.offsetOfBody)
+        self.file.write(meta_buf)
+        self.file.flush()
+        self.file.close()
 
 
+
+    '''
+    description: 添加新表到schema
+    param {*} tableName 表名
+    param {*} fieldList 字段列表,每个元素为(fieldname,fieldtype,fieldlength)的元组
+    '''
     def appendTable(self,tableName,fieldList):
         # 1. 验证输入
         # 2. 写入字段信息到body
         # 3. 写入表名信息到tableNameHead
         # 4. 更新内存中的header结构
-        print('append table')
+        print('appending table')
+        tableName = tableName.strip()
+
+        # 1. 输入验证
+        if len(tableName) == 0 or len(tableName) > MAX_TABLE_NAME_LEN:
+            print ("表名无效")
+            return False
+        
+        # 2. 构建并写入字段信息(Body部分)
+        print ("the following is to write the fields to body in all.sch")
+        field_buffer = ctypes.create_string_buffer(MAX_FIELD_LEN * len(fieldList))
+        for idx,field in enumerate(fieldList):
+            fieldName, fieldType, fieldLength = field
+
+            # 填充字段名
+            if isinstance(fieldName, str):
+                fieldName = fieldName.encode('utf-8')
+            padded_name = (' ' * (MAX_FIELD_NAME_LEN - len(fieldName))).encode('utf-8') + fieldName
+
+            # 打包字段信息
+            struct.pack_into('!10sii', field_buffer, 
+                            idx * MAX_FIELD_LEN, 
+                            padded_name, 
+                            int(fieldType), 
+                            int(fieldLength))
+
+        # 写入字段信息(Body)
+        self.file.seek(self.head.offsetOfBody)
+        self.file.write(field_buffer)
+        self.file.flush()
+
+         # self.headObj.offsetOfBody=self.headObj.offsetBody+fieldNum*MAX_FIELD_LEN
+
+        # 3. 写入表名信息（TableNameHead部分）
+        print ("the following is to write table name entry to tableNameHead in all.sch")
+        filledTableName = fill_table_name(tableName)
+        if isinstance(filledTableName, str):
+                filledTableName = filledTableName.encode('utf-8')
+        table_entry = struct.pack('!10sii',
+                                  filledTableName,
+                                  len(fieldList),
+                                  self.head.offsetOfBody)
+        
+        # 将新的tableNameEntry写回文件
+        self.file.seek(META_HEAD_SIZE + self.head.numsOfTable * TABLE_NAME_ENTRY_LEN)
+        self.file.write(table_entry)
+        self.file.flush()
+
+        # 4. 更新内存中的header结构
+        print ("modifying the header structure in main memory")
+        self.head.numsOfTable += 1
+        self.head.isStored = True
+        self.head.offsetOfBody += len(fieldList) * MAX_FIELD_LEN    # 后移body尾指针
+        self.head.tableNames.append((tableName.strip(), len(fieldList), self.head.offsetOfBody))
+        self.head.tableFields[tableName.strip()] = fieldList
+
+
         
     def delete_table_schema(self, table_name):
         # 1. 查找表
