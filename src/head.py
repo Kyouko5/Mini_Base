@@ -1,7 +1,7 @@
 '''
 Author: Kyouko
 Date: 2025-02-27 14:56:22
-LastEditTime: 2025-02-27 15:39:11
+LastEditTime: 2025-03-04 08:54:20
 Description: 1. 保存表的元数据信息
              2. 所有数据库操作都通过 Schema 类进行
              3. Schema 类负责管理唯一的 Header 实例
@@ -22,3 +22,25 @@ class Header(object):
     #  off       : 在文件中 body 空间的开始位置
     def __init__(self,nameList,fieldDict,inistored, inLen, off):
         print ('__init__ of Header')
+        self.isStored = inistored
+        self.numsOfTable = inLen
+        self.offsetOfBody = off
+        self.tableNames = nameList
+        self.tableFields = fieldDict
+
+        print ("isStore is ",self.isStored," tableNum is ",self.lenOfTableNum," offset is ",self.offsetOfBody)
+
+
+    def __del__(self):
+        print ('del Header')
+
+
+    '''
+    description: 显示数据库中所有表的元数据信息
+    '''
+    def showTables(self):
+        if self.numsOfTable > 0:
+            print("There are", self.numsOfTable, "tables in the database.")
+            for i in range(len(self.tableNames)):
+                print(self.tableNames[i])
+                print(self.tableFields[i])
