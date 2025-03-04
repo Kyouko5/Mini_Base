@@ -1,7 +1,7 @@
 '''
 Author: Kyouko
 Date: 2025-02-27 10:47:36
-LastEditTime: 2025-02-27 15:31:33
+LastEditTime: 2025-03-04 09:01:43
 Description: to process the schema data, which is stored in all.sch
              all.sch are divied into three parts,namely metaHead, tableNameHead and body
 FilePath: /Database/Mini_Base/src/schema.py
@@ -189,4 +189,4 @@ class Schema():
 
 
 schematest = Schema()
-schematest.__init__()
+head.Header.showTables(schematest.head)
