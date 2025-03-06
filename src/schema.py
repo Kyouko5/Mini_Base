@@ -1,7 +1,7 @@
 '''
 Author: Kyouko
 Date: 2025-02-27 10:47:36
-LastEditTime: 2025-03-04 10:25:16
+LastEditTime: 2025-03-06 10:32:34
 Description: to process the schema data, which is stored in all.sch
              all.sch are divied into three parts,namely metaHead, tableNameHead and body
 FilePath: /Database/Mini_Base/src/schema.py
@@ -182,6 +182,21 @@ class Schema():
         self.file.close()
 
 
+    '''
+    description: delete all the contents in the schema file
+    '''
+    def deleteAll(self):
+        print("delete all")
+        self.head.isStored = False
+        self.head.numsOfTable = 0
+        self.head.offsetOfBody = self.body_offset
+        self.head.tableNames = []
+        self.head.tableFields = {}
+
+        self.file.seek(0)
+        self.file.truncate(0)
+        self.file.flush()
+        print ("all.sch file has been truncated")
 
     '''
     description: 添加新表到schema
@@ -249,6 +264,17 @@ class Schema():
         self.head.tableNames.append((tableName.strip(), len(fieldList), self.head.offsetOfBody))
         self.head.tableFields[tableName.strip()] = fieldList
 
+
+    '''
+    description: 查找指定表是否存在
+    '''
+    def find_table(self, table_name):
+        print("finding table...")
+        Tables  = map(lambda x: x[0], self.head.tableNames)
+        if table_name in Tables:
+            return True
+        else:
+            return False
 
         
     def delete_table_schema(self, table_name):
