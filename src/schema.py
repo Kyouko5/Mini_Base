@@ -1,7 +1,7 @@
 '''
 Author: Kyouko
 Date: 2025-02-27 10:47:36
-LastEditTime: 2025-03-06 11:05:58
+LastEditTime: 2025-03-13 12:25:25
 Description: to process the schema data, which is stored in all.sch
              all.sch are divied into three parts,namely metaHead, tableNameHead and body
 FilePath: /Database/Mini_Base/src/schema.py
@@ -58,7 +58,7 @@ BODY_BEGIN_INDEX=META_HEAD_SIZE+TABLE_NAME_HEAD_SIZE            # Intitially, wh
 
 
 # 5. 辅助函数
-def fill_table_name(table_name, str):
+def fill_table_name(table_name):
      """填充表名至固定长度"""
      if len(table_name.strip()) < MAX_FIELD_NAME_LEN:
           table_name = (' ' * (MAX_FIELD_NAME_LEN-len(table_name.strip()))).encode('utf-8') + table_name.strip()
@@ -66,25 +66,36 @@ def fill_table_name(table_name, str):
      
      
 class Schema():
+    filename = 'all.sch'
 
     def __init__(self):
+        print ('__init__ of Schema')
         # 1.打开/创建all.sch文件
         # 2.读取文件内容到内存
         # 3.初始化头部信息
         # 4.构建内存中的表结构
 
-        self.filename = 'all.sch'
-        self.table_dict = {}    # 存储表信息的字典结构
+        print ('schema fileName is ' + Schema.filename)
+
+        # self.is_stored                   # 布尔值，表示是否有数据存储
+        # self.table_num                   # 整数，表示表的数量
+        # self.body_offset                 # 整数，表示body部分的末尾位置
+        # self.body_begin                  # 整数，表示body部分的起始位置
+
+        # self.table_dict = {}            # 字典，存储表信息
+        # self.head                       # Header对象，存储表的完整信息
 
         try:
             # 1. 打开文件，如果不存在就创建
-            self.file = open(self.filename, 'rb+')
-
+            self.file = open(Schema.filename, 'rb+')
+            print ("there is all.sch")
             # 2. 读取metaHead信息（12B）
-            meta_buf = self.file.read(META_HEAD_SIZE)
-            if len(meta_buf) == META_HEAD_SIZE:
+            bufLen = META_HEAD_SIZE + TABLE_NAME_HEAD_SIZE + MAX_FIELD_SECTION_SIZE  # the length of metahead, table name entries and feildName sections
+            meta_buf = ctypes.create_string_buffer(bufLen)
+            meta_buf = self.file.read(bufLen)
+            if len(meta_buf) != 0:
                 # 解析metaHead
-                self.is_stored,self.table_num,self.body_offset = struct.unpack('!?ii', meta_buf, 0)
+                self.is_stored,self.table_num,self.body_offset = struct.unpack_from('!?ii', meta_buf,0)
                 if self.is_stored:
                     print ("there is something  in the all.sch")
                     self._load_tables()
@@ -93,7 +104,7 @@ class Schema():
 
         except FileNotFoundError:
             # 如果文件不存在，创建新文件
-            print ("there is nothing in the all.sch")
+            print ("there is no all.sch")
             self.file = open(self.filename, 'wb+')
             self.init_meta_()
 
@@ -216,6 +227,10 @@ class Schema():
             print ("表名无效")
             return False
         
+        if self.find_table(tableName):
+            print(f"表 {tableName} 已经存在")
+            return False
+        
         # 2. 构建并写入字段信息(Body部分)
         print ("the following is to write the fields to body in all.sch")
         field_buffer = ctypes.create_string_buffer(MAX_FIELD_LEN * len(fieldList))
@@ -283,8 +298,36 @@ class Schema():
         # 3. 重组剩余表的偏移量
         # 4. 更新文件
         print('deleting table schema')
-        
+        table_name = table_name.strip()
 
+        # 1. 查找表
+        if not self.find_table(table_name):
+            print(f"表 {table_name} 不存在")
+            return False
 
-schematest = Schema()
-head.Header.showTables(schematest.head)
+        # 2.获取表信息
+        target_table = self.head.tableNames[table_name]
+        target_offset = target_table[2]
+        target_field_num = target_table[1]
+        target_size = target_field_num * MAX_FIELD_LEN
+
+    
+    def viewTableNames(self):
+        print ('viewtablenames begin to execute')
+        for i in self.head.tableNames:
+            print ('Table Nama is ', i[0])
+        print("that's all the tables!")
+
+    def viewtableStructure(self, table_name):
+        """显示表结构"""
+        print ('viewtableStructure begin to execute')
+        for table in self.head.tableNames:
+            if table[0].strip() == table_name.strip():
+                print(f"table Name : {table_name.decode()}")
+                print("Fields:")
+                fields = self.head.tableFields[table_name.strip()]
+                for field in fields:
+                    field_type = {0: "String", 1: "VarString", 2: "Integer", 3: "Boolean"}
+                    print(f"- {field[0].encode().strip()}: {field_type[field[1]]} (length: {field[2]})")
+                return True
+        return False
