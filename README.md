@@ -12,4 +12,7 @@
 - 完成schema.py中appendTable函数的实现 ✅
 
 ## 2025.3.13
-- 进行schema.py中delete_table_schema函数的实现
+- 完善appendTable函数实现
+- 添加字段编码和填充处理
+- 增加表结构查看功能viewtableStructure
+- 编写测试用例test_append_table
