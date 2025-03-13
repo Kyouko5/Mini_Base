@@ -10,3 +10,6 @@
 - 完成head.py编写 ✅
 - 测试运行schema的初始化函数 ✅
 - 完成schema.py中appendTable函数的实现 ✅
+
+## 2025.3.13
+- 进行schema.py中delete_table_schema函数的实现
