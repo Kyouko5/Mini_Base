@@ -1,7 +1,7 @@
 '''
 Author: Kyouko
 Date: 2025-02-27 10:47:36
-LastEditTime: 2025-03-06 10:32:34
+LastEditTime: 2025-03-06 11:05:58
 Description: to process the schema data, which is stored in all.sch
              all.sch are divied into three parts,namely metaHead, tableNameHead and body
 FilePath: /Database/Mini_Base/src/schema.py
@@ -282,7 +282,8 @@ class Schema():
         # 2. 从内存结构中删除
         # 3. 重组剩余表的偏移量
         # 4. 更新文件
-        print('delete table schema')
+        print('deleting table schema')
+        
 
 
 schematest = Schema()
