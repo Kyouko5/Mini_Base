@@ -1,9 +1,9 @@
 '''
 Author: Kyouko
 Date: 2025-03-13 11:42:16
-LastEditTime: 2025-03-13 12:21:58
-Description: 请输入文件描述
-FilePath: /src/test_schema.py
+LastEditTime: 2025-03-14 08:13:56
+Description: 测试schema的添加表功能: appendTable()
+FilePath: /Database/Mini_Base/src/test_schema.py
 '''
 from schema import Schema
 
