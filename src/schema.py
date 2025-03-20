@@ -1,7 +1,7 @@
 '''
 Author: Kyouko
 Date: 2025-02-27 10:47:36
-LastEditTime: 2025-03-13 12:25:25
+LastEditTime: 2025-03-14 08:21:03
 Description: to process the schema data, which is stored in all.sch
              all.sch are divied into three parts,namely metaHead, tableNameHead and body
 FilePath: /Database/Mini_Base/src/schema.py
@@ -290,6 +290,15 @@ class Schema():
             return True
         else:
             return False
+        
+    '''
+    description: 将内存中的header结构写回文件,在deletetable里用来刷新状态
+    '''
+    def WriteBuffer(self):
+        buflen = META_HEAD_SIZE + TABLE_NAME_HEAD_SIZE + MAX_FIELD_SECTION_SIZE
+        buf = ctypes.create_string_buffer(buflen)
+        struct.pack_into('!?ii', buf , 0, self.head.isStored, self.head .numsOfTable, self.head.offsetOfBody)
+        
 
         
     def delete_table_schema(self, table_name):

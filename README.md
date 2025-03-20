@@ -16,3 +16,6 @@
 - 添加字段编码和填充处理 ✅
 - 增加表结构查看功能viewtableStructure ✅
 - 编写测试用例test_append_table ✅
+
+### 2025.3.20
+- 
