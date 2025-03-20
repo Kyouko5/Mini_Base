@@ -1,9 +1,9 @@
 '''
 Author: Kyouko
 Date: 2025-03-13 11:42:16
-LastEditTime: 2025-03-14 08:13:56
+LastEditTime: 2025-03-20 11:20:59
 Description: 测试schema的添加表功能: appendTable()
-FilePath: /Database/Mini_Base/src/test_schema.py
+FilePath: /Mini_Base/src/test_schema.py
 '''
 from schema import Schema
 
@@ -34,6 +34,18 @@ def test_append_table():
         print("添加表失败")
     else:
         print(f"成功添加表 {table_name}")
+        # 显示所有表名
+        schema.viewTableNames()
+        schema.viewtableStructure(table_name.encode('utf-8'))
+    
+    print("删除表")
+    result = schema.delete_table_schema(table_name.encode('utf-8'))
+
+     # 4. 验证结果
+    if result is False:
+        print("删除表失败")
+    else:
+        print(f"删除添加表 {table_name}")
         # 显示所有表名
         schema.viewTableNames()
         schema.viewtableStructure(table_name.encode('utf-8'))

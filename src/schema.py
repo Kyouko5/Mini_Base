@@ -1,7 +1,7 @@
 '''
 Author: Kyouko
 Date: 2025-02-27 10:47:36
-LastEditTime: 2025-03-14 08:21:03
+LastEditTime: 2025-03-20 11:45:34
 Description: to process the schema data, which is stored in all.sch
              all.sch are divied into three parts,namely metaHead, tableNameHead and body
 FilePath: /Database/Mini_Base/src/schema.py
@@ -302,12 +302,8 @@ class Schema():
 
         
     def delete_table_schema(self, table_name):
-        # 1. 查找表
-        # 2. 从内存结构中删除
-        # 3. 重组剩余表的偏移量
-        # 4. 更新文件
         print('deleting table schema')
-        table_name = table_name.strip()
+        table_name = table_name.strip()   # 去除表名前后的空白字符
 
         # 1. 查找表
         if not self.find_table(table_name):
@@ -315,11 +311,60 @@ class Schema():
             return False
 
         # 2.获取表信息
-        target_table = self.head.tableNames[table_name]
+        target_table = None
+        target_index = -1
+        for i, entry in enumerate(self.head.tableNames):
+            # 处理表名的字符编码，确保可以正确比较字符串
+            if isinstance(table_name, bytes):
+                entry_name = entry[0]
+            else:
+                entry_name = entry[0].decode('utf-8').strip()
+                table_name = table_name.decode('utf-8') if isinstance(table_name, bytes) else table_name
+            
+            if entry_name.strip() == table_name.strip():
+                target_table = entry
+                target_index = i
+                break
+
+        if target_table is None:
+            print(f"表 {table_name} 不存在")
+            return False
+
+        # 获取目标表在文件中的位置信息
         target_offset = target_table[2]
         target_field_num = target_table[1]
         target_size = target_field_num * MAX_FIELD_LEN
 
+        # 3. 移动数据以填补删除的空间
+        # 如果被删除的表不是最后一个表，需要将后续数据前移
+        if target_offset + target_size < self.head.offsetOfBody:
+            self.file.seek(target_offset + target_size)  # 定位到被删除表后面的数据
+            remaining_data = self.file.read(self.head.offsetOfBody - (target_offset + target_size))  # 读取后续数据
+            self.file.seek(target_offset)    # 定位到被删除表的起始位置
+            self.file.write(remaining_data)  # 将后续数据前移
+
+        # 4. 更新内存中的header结构
+        # 从tableFields字典中删除表信息
+        table_name_key = table_name if isinstance(table_name, bytes) else table_name.encode('utf-8')
+        if table_name_key in self.head.tableFields:
+            del self.head.tableFields[table_name_key]
+
+        self.head.tableNames.pop(target_index)  # 从表名列表中移除
+        self.head.numsOfTable -= 1              # 表数量减1
+        self.head.offsetOfBody -= target_size   # 更新body结束位置
+        
+        # 如果删除后没有表，重置header状态
+        if self.head.numsOfTable == 0:
+            self.head.isStored = False
+            self.head.offsetOfBody = BODY_BEGIN_INDEX
+
+        # 5. 将更新后的meta信息写回文件
+        self.file.seek(0)
+        self.file.write(struct.pack('!?ii', self.head.isStored, self.head.numsOfTable, self.head.offsetOfBody))
+        self.file.flush()
+
+        print(f"表 {table_name} 删除成功")
+        return True
     
     def viewTableNames(self):
         print ('viewtablenames begin to execute')
